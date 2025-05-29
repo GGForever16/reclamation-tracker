@@ -1,0 +1,51 @@
+{
+  "name": "7-Week Reclamation Tracker",
+  "short_name": "Reclamation",
+  "description": "Transform your goals into actionable daily progress",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#dc2626",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["productivity", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMzIiIGZpbGw9IiNkYzI2MjYiLz4KPHN2ZyB4PSI0OCIgeT0iNDgiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiPgo8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPgo8cG9seWxpbmUgcG9pbnRzPSIxMiw2IDEyLDEyIDEzLDE0Ii8+CjwvcG9seWxpbmU+Cjwvc3ZnPgo8L3N2Zz4K",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iODQiIGZpbGw9IiNkYzI2MjYiLz4KPHN2ZyB4PSIxMjgiIHk9IjEyOCIgd2lkdGg9IjI1NiIgaGVpZ2h0PSIyNTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz4KPHBvbHlsaW5lIHBvaW50cz0iMTIsNiAxMiwxMiAxMywxNCIvPgo8L3BvbHlsaW5lPgo8L3N2Zz4KPC9zdmc+Cg==",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjU2OCIgdmlld0JveD0iMCAwIDMyMCA1NjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iNTY4IiBmaWxsPSIjZjlmYWZiIi8+CjxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjI4OCIgaGVpZ2h0PSI4MCIgcng9IjgiIGZpbGw9IiNkYzI2MjYiLz4KPHRleHQgeD0iMzIiIHk9IjQ0IiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiPjctV2VlayBSZWNsYW1hdGlvbjwvdGV4dD4KPHRleHQgeD0iMzIiIHk9IjY0IiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxMCIgb3BhY2l0eT0iMC45Ij4kNUsvbW9udGggYnkgQXVndXN0IDI2LCAyMDI2PC90ZXh0Pgo8dGV4dCB4PSIzMiIgeT0iODAiIGZpbGw9IndoaXRlIiBmb250LXNpemU9IjEwIiBvcGFjaXR5PSIwLjkiPkFJLXBvd2VyZWQgbGVhZHMgZm9yIGxvY2FsIHRyYWRlczwvdGV4dD4KPC9zdmc+",
+      "sizes": "320x568",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Today's Tasks",
+      "short_name": "Tasks",
+      "description": "View today's non-negotiables",
+      "url": "/?view=tasks"
+    },
+    {
+      "name": "Track Metrics",
+      "short_name": "Metrics", 
+      "description": "Log daily progress",
+      "url": "/?view=metrics"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

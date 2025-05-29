@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7-Week Reclamation Tracker</title>
+    <meta name="description" content="Transform your goals into actionable daily progress">
+    <meta name="theme-color" content="#dc2626">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMzIiIGZpbGw9IiNkYzI2MjYiLz4KPHN2ZyB4PSI0OCIgeT0iNDgiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiPgo8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPgo8cG9seWxpbmUgcG9pbnRzPSIxMiw2IDEyLDEyIDEzLDE0Ii8+CjwvcG9seWxpbmU+Cjwvc3ZnPgo8L3N2Zz4K">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMzIiIGZpbGw9IiNkYzI2MjYiLz4KPHN2ZyB4PSI0OCIgeT0iNDgiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiPgo8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPgo8cG9seWxpbmUgcG9pbnRzPSIxMiw2IDEyLDEyIDEzLDE0Ii8+CjwvcG9seWxpbmU+Cjwvc3ZnPgo8L3N2Zz4K">
+    
+    <!-- iOS Status Bar -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Reclamation">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* PWA specific styles */
+        @media (display-mode: standalone) {
+            body { padding-top: env(safe-area-inset-top); }
+        }
+        
+        /* Custom scrollbar for mobile */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 2px; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app"></div>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- React -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { 
+            CheckCircle2, Circle, Target, Calendar, DollarSign, 
+            Users, TrendingUp, Flame, Menu, X 
+        } = lucide;
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW registration failed'));
+            });
+        }
+
+        const GoalActionPlan = () => {
+            const [currentWeek, setCurrentWeek] = useState(1);
+            const [completedTasks, setCompletedTasks] = useState(() => {
+                const saved = localStorage.getItem('completedTasks');
+                return saved ? JSON.parse(saved) : {};
+            });
+            const [metrics, setMetrics] = useState(() => {
+                const saved = localStorage.getItem('metrics');
+                return saved ? JSON.parse(saved) : {
+                    dailyOutreach: 0,
+                    dailyRevenue: 0,
+                    clientsSecured: 0,
+                    weeklyGoal: 0
+                };
+            });
+            const [showInstallPrompt, setShowInstallPrompt] = useState(true);
+
+            // Save to localStorage whenever state changes
+            useEffect(() => {
+                localStorage.setItem('completedTasks', JSON.stringify(completedTasks));
+            }, [completedTasks]);
+
+            useEffect(() => {
+                localStorage.setItem('metrics', JSON.stringify(metrics));
+            }, [metrics]);
+
+            const weeks = [
+                {
+                    title: "Week 1: Break the Cycle",
+                    mission: "Kill the inertia. Rewire the first 60 minutes of your day.",
+                    dailyTasks: [
+                        "Wake up at exact same time (5-6AM)",
+                        "No phone for 1 hour after waking",
+                        "Write 3 journal prompts",
+                        "Move body 20-30 minutes",
+                        "Drink 1L water, fast 12-14 hrs",
+                        "No complaining rule"
+                    ],
+                    focus: "Foundation Building"
+                },
+                {
+                    title: "Week 2: Rebuild Your Power Base", 
+                    mission: "Stabilize your body, money, and time.",
+                    dailyTasks: [
+                        "Track every dollar spent",
+                        "Eat clean: eggs, rice, beans, greens",
+                        "Inventory income skills",
+                        "Kill 3 time-wasters",
+                        "15-min night ritual & journal",
+                        "Prep tomorrow's top 3 actions"
+                    ],
+                    focus: "Stabilization"
+                },
+                {
+                    title: "Week 3-4: Secure Short-Term Cash",
+                    mission: "Get money flowing. Survival first, then scale.",
+                    dailyTasks: [
+                        "Work chosen hustle/gig",
+                        "Sell 1 item you own",
+                        "Make 10 outreach contacts",
+                        "Track outreach numbers",
+                        "Track daily revenue",
+                        "Journal daily lessons"
+                    ],
+                    focus: "Cash Flow"
+                },
+                {
+                    title: "Week 5-6: Build the Next Identity",
+                    mission: "Shift from survival to strategy.",
+                    dailyTasks: [
+                        "Learn 30 minutes (skills/marketing)",
+                        "Cold outreach to trades businesses",
+                        "Refine 1-page offer",
+                        "Research target market",
+                        "Build service systems",
+                        "Track lead generation metrics"
+                    ],
+                    focus: "Business Development"
+                },
+                {
+                    title: "Week 7: Mind Like a Weapon",
+                    mission: "Rewire your internal narrative.",
+                    dailyTasks: [
+                        "Read 'As a Man Thinketh' daily",
+                        "10 minutes meditation",
+                        "Declare new truth 10x daily",
+                        "Plan next phase strategy",
+                        "Review and adjust systems",
+                        "Prepare for scale phase"
+                    ],
+                    focus: "Mental Reconstruction"
+                }
+            ];
+
+            const businessMilestones = [
+                { month: "Month 1-2", goal: "Secure first 2 paying clients", target: "$600/month" },
+                { month: "Month 3-4", goal: "Systemize service delivery", target: "$1,500/month" },
+                { month: "Month 5-8", goal: "Scale to 5 clients", target: "$2,500/month" },
+                { month: "Month 9-12", goal: "Optimize and expand", target: "$4,000/month" },
+                { month: "Month 13-18", goal: "Reach Chief Aim", target: "$5,000/month" }
+            ];
+
+            const toggleTask = (weekIndex, taskIndex) => {
+                const key = `${weekIndex}-${taskIndex}`;
+                setCompletedTasks(prev => ({
+                    ...prev,
+                    [key]: !prev[key]
+                }));
+                
+                // Haptic feedback on mobile
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+            };
+
+            const updateMetric = (metric, value) => {
+                setMetrics(prev => ({
+                    ...prev,
+                    [metric]: parseInt(value) || 0
+                }));
+            };
+
+            const getWeekProgress = (weekIndex) => {
+                const weekTasks = weeks[weekIndex].dailyTasks;
+                const completed = weekTasks.filter((_, taskIndex) => 
+                    completedTasks[`${weekIndex}-${taskIndex}`]
+                ).length;
+                return Math.round((completed / weekTasks.length) * 100);
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto p-4 bg-gray-50 min-h-screen pb-20">
+                    {/* Install Prompt */}
+                    {showInstallPrompt && (
+                        <div className="bg-red-600 text-white p-3 rounded-lg mb-4 text-center relative">
+                            <button 
+                                onClick={() => setShowInstallPrompt(false)}
+                                className="absolute top-2 right-2 text-white"
+                            >
+                                <X size={16} />
+                            </button>
+                            <p className="text-sm font-medium">📱 Add to Home Screen</p>
+                            <p className="text-xs opacity-90">iPhone: Share → Add to Home Screen | Android: Menu → Install App</p>
+                        </div>
+                    )}
+
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-red-600 to-red-800 text-white p-4 rounded-lg mb-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Target size={24} />
+                            <h1 className="text-xl font-bold">7-Week Reclamation</h1>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                            <div>
+                                <span className="font-semibold">🎯 Chief Aim:</span>
+                                <p className="opacity-90">$5,000/month by August 28, 2026</p>
+                            </div>
+                            <div>
+                                <span className="font-semibold">🔥 Mission:</span>
+                                <p className="opacity-90">AI-powered leads for local trades</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Current Week Tracker */}
+                    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h2 className="text-lg font-bold flex items-center gap-2">
+                                <Flame className="w-5 h-5 text-orange-500" />
+                                Week {currentWeek}
+                            </h2>
+                            <select 
+                                value={currentWeek} 
+                                onChange={(e) => setCurrentWeek(parseInt(e.target.value))}
+                                className="px-2 py-1 border rounded-md text-sm"
+                            >
+                                {weeks.map((_, index) => (
+                                    <option key={index} value={index + 1}>Week {index + 1}</option>
+                                ))}
+                            </select>
+                        </div>
+                        
+                        <div className="mb-3">
+                            <p className="text-gray-600 mb-2 text-sm">{weeks[currentWeek - 1]?.mission}</p>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                    <div 
+                                        className="bg-red-600 h-2 rounded-full transition-all duration-300"
+                                        style={{ width: `${getWeekProgress(currentWeek - 1)}%` }}
+                                    ></div>
+                                </div>
+                                <span className="text-sm font-medium">{getWeekProgress(currentWeek - 1)}%</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h3 className="font-semibold text-sm">Daily Non-Negotiables:</h3>
+                            {weeks[currentWeek - 1]?.dailyTasks.map((task, index) => (
+                                <div key={index} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded active:bg-gray-100">
+                                    <button 
+                                        onClick={() => toggleTask(currentWeek - 1, index)}
+                                        className="flex-shrink-0"
+                                    >
+                                        {completedTasks[`${currentWeek - 1}-${index}`] ? 
+                                            <CheckCircle2 className="w-5 h-5 text-green-600" /> : 
+                                            <Circle className="w-5 h-5 text-gray-400" />
+                                        }
+                                    </button>
+                                    <span className={`text-sm ${completedTasks[`${currentWeek - 1}-${index}`] ? 'line-through text-gray-500' : ''}`}>
+                                        {task}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Daily Metrics Tracker */}
+                    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+                        <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-blue-500" />
+                            Daily Metrics
+                        </h2>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-medium mb-1">Daily Outreach</label>
+                                <input 
+                                    type="number" 
+                                    value={metrics.dailyOutreach}
+                                    onChange={(e) => updateMetric('dailyOutreach', e.target.value)}
+                                    className="w-full px-2 py-2 border rounded-md text-sm"
+                                    placeholder="10"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium mb-1">Daily Revenue ($)</label>
+                                <input 
+                                    type="number" 
+                                    value={metrics.dailyRevenue}
+                                    onChange={(e) => updateMetric('dailyRevenue', e.target.value)}
+                                    className="w-full px-2 py-2 border rounded-md text-sm"
+                                    placeholder="0"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium mb-1">Clients Secured</label>
+                                <input 
+                                    type="number" 
+                                    value={metrics.clientsSecured}
+                                    onChange={(e) => updateMetric('clientsSecured', e.target.value)}
+                                    className="w-full px-2 py-2 border rounded-md text-sm"
+                                    placeholder="0"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium mb-1">Weekly Goal ($)</label>
+                                <input 
+                                    type="number" 
+                                    value={metrics.weeklyGoal}
+                                    onChange={(e) => updateMetric('weeklyGoal', e.target.value)}
+                                    className="w-full px-2 py-2 border rounded-md text-sm"
+                                    placeholder="500"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Business Milestones */}
+                    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+                        <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-green-500" />
+                            Business Milestones
+                        </h2>
+                        <div className="space-y-2">
+                            {businessMilestones.map((milestone, index) => (
+                                <div key={index} className="flex items-center gap-3 p-2 border rounded-md text-sm">
+                                    <div className="w-16 font-medium text-gray-600">{milestone.month}</div>
+                                    <div className="flex-1">{milestone.goal}</div>
+                                    <div className="font-semibold text-green-600">{milestone.target}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Week Overview */}
+                    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+                        <h2 className="text-lg font-bold mb-3">All Weeks</h2>
+                        <div className="space-y-2">
+                            {weeks.map((week, index) => (
+                                <div key={index} className="border rounded-lg p-3">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <h3 className="font-semibold text-sm">Week {index + 1}</h3>
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                            index + 1 === currentWeek ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
+                                        }`}>
+                                            {week.focus}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-600 mb-2">{week.mission}</p>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 bg-gray-200 rounded-full h-1">
+                                            <div 
+                                                className="bg-red-600 h-1 rounded-full"
+                                                style={{ width: `${getWeekProgress(index)}%` }}
+                                            ></div>
+                                        </div>
+                                        <span className="text-xs">{getWeekProgress(index)}%</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Daily Declaration */}
+                    <div className="bg-gray-800 text-white p-4 rounded-lg text-center">
+                        <h3 className="font-bold mb-2">Daily Declaration</h3>
+                        <p className="italic text-sm">"No one is coming to save me. I will become the one who does."</p>
+                        <p className="text-xs mt-2 opacity-80">Speak this 10x every morning</p>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<GoalActionPlan />, document.getElementById('app'));
+    </script>
+</body>
+</html>
