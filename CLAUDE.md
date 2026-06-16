@@ -107,7 +107,7 @@ CLAUDE.md         — this file (best practices)
 ## Owner Contact
 
 - Business: Landbouw Josefina & Tropical Garden N.V.
-- Owner WhatsApp test number: +59996970060 (Curaçao)
+- Owner WhatsApp test number: +59996970016 (Curaçao)
 
 ---
 

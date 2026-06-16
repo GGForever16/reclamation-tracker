@@ -133,7 +133,7 @@ function testEenMedewerker() {
     naam:           "Genel Montas",
     adres:          "Carawaraweg 45",
     geboortedatum:  "1979.10.22",
-    telefoon:       "+59996970060",   // jouw Curaçao nummer
+    telefoon:       "+59996970016",   // jouw Curaçao nummer
     apiKey:         JOUW_API_SLEUTEL,
     afdeling:       "Planten",
     functie:        "Arbeider",
@@ -162,7 +162,7 @@ function testEenMedewerker() {
   }
 
   stuurWhatsApp(testMedewerker.telefoon, testMedewerker.apiKey, bericht);
-  Logger.log("Testbericht verstuurd naar +59996970060");
+  Logger.log("Testbericht verstuurd naar +59996970016");
 }
 
 // ── Hulpfuncties ──
