@@ -120,14 +120,21 @@ function stuurWhatsApp(telefoon, apiKey, bericht) {
   }
 }
 
-// ── Testfunctie: stuur 1 testbericht (vul jouw nummer in) ──
+// ── Testfunctie: stuur een testbericht naar de eigenaar ──
+// STAP VOOR GEBRUIK:
+//   1. Stuur "I allow callmebot to send me messages" naar +34 644 76 21 01 op WhatsApp
+//   2. Je ontvangt een API-sleutel (6-cijferig getal)
+//   3. Vul die sleutel in bij JOUW_API_SLEUTEL hieronder
+//   4. Selecteer deze functie en klik Uitvoeren
 function testEenMedewerker() {
+  const JOUW_API_SLEUTEL = "XXXXXX"; // <-- vervang dit na activatie CallMeBot
+
   const testMedewerker = {
     naam:           "Genel Montas",
     adres:          "Carawaraweg 45",
     geboortedatum:  "1979.10.22",
-    telefoon:       "+5999XXXXXXX",   // <-- vul hier het telefoonnummer in
-    apiKey:         "XXXXXX",          // <-- vul hier de CallMeBot API-sleutel in
+    telefoon:       "+59996970060",   // jouw Curaçao nummer
+    apiKey:         JOUW_API_SLEUTEL,
     afdeling:       "Planten",
     functie:        "Arbeider",
     datumInDienst:  "10/1/2025",
@@ -146,10 +153,16 @@ function testEenMedewerker() {
     kortingAOV:     3.07,
   };
 
-  const bericht = maakSalarisSlip(testMedewerker, getMaandNaam());
+  const bericht = maakSalarisSlip(testMedewerker, "April 2026");
   Logger.log("VOORBEELD BERICHT:\n" + bericht);
-  // Verwijder de '//' op de volgende regel om echt te versturen:
-  // stuurWhatsApp(testMedewerker.telefoon, testMedewerker.apiKey, bericht);
+
+  if (JOUW_API_SLEUTEL === "XXXXXX") {
+    Logger.log("STOP: vervang JOUW_API_SLEUTEL eerst met je echte CallMeBot sleutel.");
+    return;
+  }
+
+  stuurWhatsApp(testMedewerker.telefoon, testMedewerker.apiKey, bericht);
+  Logger.log("Testbericht verstuurd naar +59996970060");
 }
 
 // ── Hulpfuncties ──
