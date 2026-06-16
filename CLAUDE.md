@@ -5,7 +5,7 @@
 This project automates sending monthly salary slips (salarisslips) via WhatsApp
 to employees of Landbouw Josefina & Tropical Garden N.V. (Curaçao).
 
-**Stack:** Google Sheets + Google Apps Script + CallMeBot API
+**Stack:** Google Sheets + Google Apps Script + Meta WhatsApp Cloud API
 **Cost:** ƒ 0.00 per month (100% free)
 **Auto-send:** Every month on the 5th at 08:00 AM Curaçao time
 

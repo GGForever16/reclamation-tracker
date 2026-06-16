@@ -1,171 +1,203 @@
 // ============================================================
-// Salarisslip WhatsApp Automatie - Landbouw Josefina & Tropical Garden N.V.
-// Platform: Google Apps Script (gratis)
-// WhatsApp API: CallMeBot (gratis)
+// Salarisslip WhatsApp Automatie - Meta WhatsApp Cloud API
+// Platform : Google Apps Script (gratis)
+// WhatsApp : Meta Cloud API (officieel, veilig, direct)
 // ============================================================
 
-const COMPANY_NAME = "Landbouw Josefina & Tropical Garden N.V.";
-const SHEET_NAME = "Medewerkers";
+// ── CONFIGURATIE ─────────────────────────────────────────────
+// Vul deze drie waarden in nadat je de Meta setup hebt gedaan
+// (zie SETUP.md voor stap-voor-stap instructies)
 
-// ── Hoofdfunctie: wordt automatisch uitgevoerd op de 1e van de maand ──
+const META_ACCESS_TOKEN = "JOUW_PERMANENT_TOKEN";    // System User token
+const PHONE_NUMBER_ID   = "JOUW_PHONE_NUMBER_ID";    // van Meta Developer Console
+const TEMPLATE_NAME     = "salarisslip_maandelijks"; // naam van je goedgekeurde template
+const TEMPLATE_LANGUAGE = "nl";                       // taalcode van de template
+
+const COMPANY_NAME = "Landbouw Josefina & Tropical Garden N.V.";
+const SHEET_NAME   = "Medewerkers";
+const META_API_VERSION = "v20.0";
+
+// ── Hoofdfunctie: stuurt slips naar alle medewerkers ─────────
 function stuurMaandelijkseSlips() {
+  if (!configIngevuld()) return;
+
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   if (!sheet) {
-    Logger.log("Sheet '" + SHEET_NAME + "' niet gevonden.");
+    Logger.log("FOUT: Sheet '" + SHEET_NAME + "' niet gevonden.");
     return;
   }
 
-  const data = sheet.getDataRange().getValues();
+  const data  = sheet.getDataRange().getValues();
   const maand = getMaandNaam();
+  let verstuurd = 0, mislukt = 0;
 
-  // Rij 1 = headers, data begint op rij 2
   for (let i = 1; i < data.length; i++) {
     const r = data[i];
+    if (!r[0]) continue; // sla lege rijen over
 
-    // Sla lege rijen over
-    if (!r[0]) continue;
+    const m = rijNaarMedewerker(r);
+    const ok = stuurMetaWhatsApp(m.telefoon, maakTemplateParameters(m, maand));
 
-    const medewerker = {
-      naam:             r[0],
-      adres:            r[1],
-      geboortedatum:    r[2],
-      telefoon:         String(r[3]).trim(),
-      apiKey:           String(r[4]).trim(),
-      afdeling:         r[5],
-      functie:          r[6],
-      datumInDienst:    r[7],
-      uurloon:          Number(r[8]),
-      // Inkomsten
-      salaris:          Number(r[9]),
-      toeslagBVZ:       Number(r[10]),
-      toeslagAOV:       Number(r[11]),
-      toeslagSVBZiek:   Number(r[12]),
-      toeslagSVBOng:    Number(r[13]),
-      toeslagAVBZ:      Number(r[14]),
-      // Inhoudingen
-      premieBVZ:        Number(r[15]),
-      premieAOV:        Number(r[16]),
-      premieSVBOng:     Number(r[17]),
-      premieSVBZiek:    Number(r[18]),
-      premieAVBZ:       Number(r[19]),
-      kortingAOV:       Number(r[20]),
-    };
+    if (ok) verstuurd++; else mislukt++;
 
-    const bericht = maakSalarisSlip(medewerker, maand);
-    stuurWhatsApp(medewerker.telefoon, medewerker.apiKey, bericht);
-
-    // 3 seconden wachten tussen berichten (CallMeBot limiet)
-    Utilities.sleep(3000);
+    Utilities.sleep(1000); // 1 seconde tussen berichten
   }
+
+  Logger.log("Klaar — verstuurd: " + verstuurd + " | mislukt: " + mislukt);
 }
 
-// ── Formatteer het salarisslip bericht ──
-function maakSalarisSlip(m, maand) {
+// ── Zet een spreadsheet-rij om naar een medewerker-object ────
+function rijNaarMedewerker(r) {
+  return {
+    naam:           String(r[0]).trim(),
+    adres:          String(r[1]).trim(),
+    geboortedatum:  String(r[2]).trim(),
+    telefoon:       String(r[3]).trim(),
+    // kolom E (index 4) niet gebruikt - was CallMeBot key, nu leeg laten
+    afdeling:       String(r[5]).trim(),
+    functie:        String(r[6]).trim(),
+    datumInDienst:  String(r[7]).trim(),
+    uurloon:        Number(r[8]),
+    salaris:        Number(r[9]),
+    toeslagBVZ:     Number(r[10]),
+    toeslagAOV:     Number(r[11]),
+    toeslagSVBZiek: Number(r[12]),
+    toeslagSVBOng:  Number(r[13]),
+    toeslagAVBZ:    Number(r[14]),
+    premieBVZ:      Number(r[15]),
+    premieAOV:      Number(r[16]),
+    premieSVBOng:   Number(r[17]),
+    premieSVBZiek:  Number(r[18]),
+    premieAVBZ:     Number(r[19]),
+    kortingAOV:     Number(r[20]),
+  };
+}
+
+// ── Bereken totalen en bouw de template-variabelen ───────────
+// Volgorde moet EXACT overeenkomen met {{1}} t/m {{19}} in de template
+function maakTemplateParameters(m, maand) {
   const totaalInkomsten = m.salaris + m.toeslagBVZ + m.toeslagAOV +
                           m.toeslagSVBZiek + m.toeslagSVBOng + m.toeslagAVBZ;
   const totaalInhouding = m.premieBVZ + m.premieAOV + m.premieSVBOng +
                           m.premieSVBZiek + m.premieAVBZ + m.kortingAOV;
   const nettoBetaling   = totaalInkomsten - totaalInhouding;
-  const vandaag         = Utilities.formatDate(new Date(), "America/Curacao", "d/M/yyyy");
 
-  return (
-    "📋 *SALARISSLIP - " + maand + "*\n" +
-    "━━━━━━━━━━━━━━━━━━━\n" +
-    "👤 " + m.naam + "\n" +
-    "📍 " + m.adres + "\n" +
-    "🏢 " + COMPANY_NAME + "\n" +
-    "📅 Datum: " + vandaag + "\n" +
-    "━━━━━━━━━━━━━━━━━━━\n" +
-    "💼 Afdeling       : " + m.afdeling + "\n" +
-    "🔨 Functie        : " + m.functie + "\n" +
-    "📆 Datum in dienst: " + m.datumInDienst + "\n" +
-    "⏰ Uurloon        : ƒ " + fmt(m.uurloon) + "\n" +
-    "━━━━━━━━━━━━━━━━━━━\n" +
-    "📈 *INKOMSTEN*\n" +
-    "Salaris                    : ƒ " + fmt(m.salaris) + "\n" +
-    "Toeslag BVZ Basisverzekering: ƒ " + fmt(m.toeslagBVZ) + "\n" +
-    "Toeslag AOV/AWW            : ƒ " + fmt(m.toeslagAOV) + "\n" +
-    "Toeslag SVB Ziektekosten   : ƒ " + fmt(m.toeslagSVBZiek) + "\n" +
-    "Toeslag SVB Ongevallen     : ƒ " + fmt(m.toeslagSVBOng) + "\n" +
-    "Toeslag AVBZ               : ƒ " + fmt(m.toeslagAVBZ) + "\n" +
-    "*Totaal Inkomsten: ƒ " + fmt(totaalInkomsten) + "*\n" +
-    "━━━━━━━━━━━━━━━━━━━\n" +
-    "📉 *INHOUDINGEN*\n" +
-    "Premie BVZ Basisverzekering: ƒ " + fmt(m.premieBVZ) + "\n" +
-    "Premie AOV/AWW             : ƒ " + fmt(m.premieAOV) + "\n" +
-    "Premie SVB Ongevallen      : ƒ " + fmt(m.premieSVBOng) + "\n" +
-    "Premie SVB Ziektekosten    : ƒ " + fmt(m.premieSVBZiek) + "\n" +
-    "Premie AVBZ                : ƒ " + fmt(m.premieAVBZ) + "\n" +
-    "Korting AOV/AWW            : ƒ " + fmt(m.kortingAOV) + "\n" +
-    "*Totaal Inhoudingen: ƒ " + fmt(totaalInhouding) + "*\n" +
-    "━━━━━━━━━━━━━━━━━━━\n" +
-    "💰 *NETTO UITBETALEN CASH: ƒ " + fmt(nettoBetaling) + "*\n" +
-    "━━━━━━━━━━━━━━━━━━━\n" +
-    "_Aangemaakt met automatisch systeem_"
-  );
+  const waarden = [
+    maand,                   // {{1}}  loontijdvak
+    m.naam,                  // {{2}}  naam medewerker
+    m.afdeling,              // {{3}}
+    m.functie,               // {{4}}
+    fmt(m.salaris),          // {{5}}
+    fmt(m.toeslagBVZ),       // {{6}}
+    fmt(m.toeslagAOV),       // {{7}}
+    fmt(m.toeslagSVBZiek),   // {{8}}
+    fmt(m.toeslagSVBOng),    // {{9}}
+    fmt(m.toeslagAVBZ),      // {{10}}
+    fmt(totaalInkomsten),    // {{11}}
+    fmt(m.premieBVZ),        // {{12}}
+    fmt(m.premieAOV),        // {{13}}
+    fmt(m.premieSVBOng),     // {{14}}
+    fmt(m.premieSVBZiek),    // {{15}}
+    fmt(m.premieAVBZ),       // {{16}}
+    fmt(m.kortingAOV),       // {{17}}
+    fmt(totaalInhouding),    // {{18}}
+    fmt(nettoBetaling),      // {{19}}
+  ];
+
+  return waarden.map(val => ({ type: "text", text: String(val) }));
 }
 
-// ── Verstuur via CallMeBot (gratis WhatsApp API) ──
-function stuurWhatsApp(telefoon, apiKey, bericht) {
-  const url = "https://api.callmebot.com/whatsapp.php" +
-    "?phone=" + encodeURIComponent(telefoon) +
-    "&text="  + encodeURIComponent(bericht) +
-    "&apikey=" + encodeURIComponent(apiKey);
+// ── Verstuur via Meta WhatsApp Cloud API ─────────────────────
+function stuurMetaWhatsApp(telefoon, templateParameters) {
+  const url = "https://graph.facebook.com/" + META_API_VERSION + "/" +
+              PHONE_NUMBER_ID + "/messages";
 
-  try {
-    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-    Logger.log("Verstuurd naar " + telefoon + " | Status: " + response.getResponseCode());
-  } catch (e) {
-    Logger.log("Fout bij verzenden naar " + telefoon + ": " + e.message);
-  }
-}
-
-// ── Testfunctie: stuur een testbericht naar de eigenaar ──
-// STAP VOOR GEBRUIK:
-//   1. Stuur "I allow callmebot to send me messages" naar +34 644 76 21 01 op WhatsApp
-//   2. Je ontvangt een API-sleutel (6-cijferig getal)
-//   3. Vul die sleutel in bij JOUW_API_SLEUTEL hieronder
-//   4. Selecteer deze functie en klik Uitvoeren
-function testEenMedewerker() {
-  const JOUW_API_SLEUTEL = "XXXXXX"; // <-- vervang dit na activatie CallMeBot
-
-  const testMedewerker = {
-    naam:           "Genel Montas",
-    adres:          "Carawaraweg 45",
-    geboortedatum:  "1979.10.22",
-    telefoon:       "+59996970016",   // jouw Curaçao nummer
-    apiKey:         JOUW_API_SLEUTEL,
-    afdeling:       "Planten",
-    functie:        "Arbeider",
-    datumInDienst:  "10/1/2025",
-    uurloon:        15.12,
-    salaris:        2620.25,
-    toeslagBVZ:     239.81,
-    toeslagAOV:     244.97,
-    toeslagSVBZiek: 49.78,
-    toeslagSVBOng:  32.75,
-    toeslagAVBZ:    12.89,
-    premieBVZ:      350.69,
-    premieAOV:      412.58,
-    premieSVBOng:   32.75,
-    premieSVBZiek:  49.78,
-    premieAVBZ:     51.57,
-    kortingAOV:     3.07,
+  const payload = {
+    messaging_product: "whatsapp",
+    to: telefoon,
+    type: "template",
+    template: {
+      name: TEMPLATE_NAME,
+      language: { code: TEMPLATE_LANGUAGE },
+      components: [
+        {
+          type: "body",
+          parameters: templateParameters
+        }
+      ]
+    }
   };
 
-  const bericht = maakSalarisSlip(testMedewerker, "April 2026");
-  Logger.log("VOORBEELD BERICHT:\n" + bericht);
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    headers: { Authorization: "Bearer " + META_ACCESS_TOKEN },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
 
-  if (JOUW_API_SLEUTEL === "XXXXXX") {
-    Logger.log("STOP: vervang JOUW_API_SLEUTEL eerst met je echte CallMeBot sleutel.");
-    return;
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    const code     = response.getResponseCode();
+    const body     = response.getContentText();
+    const ok       = (code === 200);
+    Logger.log((ok ? "OK" : "FOUT") + " → " + telefoon + " | HTTP " + code + " | " + body);
+    return ok;
+  } catch (e) {
+    Logger.log("FOUT → " + telefoon + ": " + e.message);
+    return false;
   }
-
-  stuurWhatsApp(testMedewerker.telefoon, testMedewerker.apiKey, bericht);
-  Logger.log("Testbericht verstuurd naar +59996970016");
 }
 
-// ── Hulpfuncties ──
+// ── Testfunctie: stuur testbericht naar jouw nummer ──────────
+function testEenMedewerker() {
+  if (!configIngevuld()) return;
+
+  const testMedewerker = rijNaarMedewerker([
+    "Genel Montas",    // A naam
+    "Carawaraweg 45",  // B adres
+    "1979.10.22",      // C geboortedatum
+    "+59996970016",    // D telefoon (jouw testnummer)
+    "",                // E ongebruikt
+    "Planten",         // F afdeling
+    "Arbeider",        // G functie
+    "10/1/2025",       // H datum in dienst
+    15.12,             // I uurloon
+    2620.25,           // J salaris
+    239.81,            // K toeslag BVZ
+    244.97,            // L toeslag AOV
+    49.78,             // M toeslag SVB ziek
+    32.75,             // N toeslag SVB ong
+    12.89,             // O toeslag AVBZ
+    350.69,            // P premie BVZ
+    412.58,            // Q premie AOV
+    32.75,             // R premie SVB ong
+    49.78,             // S premie SVB ziek
+    51.57,             // T premie AVBZ
+    3.07,              // U korting AOV
+  ]);
+
+  const parameters = maakTemplateParameters(testMedewerker, "April 2026");
+
+  Logger.log("=== TEMPLATE VARIABELEN ===");
+  parameters.forEach((p, i) => Logger.log("  {{" + (i + 1) + "}} = " + p.text));
+  Logger.log("===========================");
+
+  stuurMetaWhatsApp(testMedewerker.telefoon, parameters);
+}
+
+// ── Maandelijkse trigger instellen (1 keer uitvoeren) ────────
+function installeerMaandelijkseTrigger() {
+  ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger("stuurMaandelijkseSlips")
+    .timeBased()
+    .onMonthDay(5)
+    .atHour(8)
+    .create();
+  Logger.log("Trigger ingesteld: elke maand op de 5e om 08:00 Curaçao tijd");
+}
+
+// ── Hulpfuncties ─────────────────────────────────────────────
 function fmt(n) {
   return Number(n).toFixed(2);
 }
@@ -176,22 +208,14 @@ function getMaandNaam() {
     "Juli","Augustus","September","Oktober","November","December"
   ];
   const nu = new Date();
-  // Stuur de slip voor de VORIGE maand (de maand die net afliep)
   const vorigeMaand = new Date(nu.getFullYear(), nu.getMonth() - 1, 1);
   return maanden[vorigeMaand.getMonth()] + " " + vorigeMaand.getFullYear();
 }
 
-// ── Installeer de maandelijkse trigger (voer dit 1 keer uit) ──
-function installeerMaandelijkseTrigger() {
-  // Verwijder bestaande triggers om duplicaten te voorkomen
-  ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
-
-  // Elke maand op de 5e om 08:00 (Curaçao tijd = UTC-4)
-  ScriptApp.newTrigger("stuurMaandelijkseSlips")
-    .timeBased()
-    .onMonthDay(5)
-    .atHour(8)
-    .create();
-
-  Logger.log("Trigger ingesteld: elke maand op de 5e om 08:00");
+function configIngevuld() {
+  if (META_ACCESS_TOKEN === "JOUW_PERMANENT_TOKEN" || PHONE_NUMBER_ID === "JOUW_PHONE_NUMBER_ID") {
+    Logger.log("STOP: vul META_ACCESS_TOKEN en PHONE_NUMBER_ID in bovenaan het script. Zie SETUP.md.");
+    return false;
+  }
+  return true;
 }
